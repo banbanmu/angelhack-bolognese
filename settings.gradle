@@ -1,2 +1,3 @@
 rootProject.name = 'boss'
 include 'boss-api'
+include 'boss-recorder'
