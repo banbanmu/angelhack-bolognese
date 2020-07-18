@@ -5,7 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import gelato.riso.bossapi.service.user.User;
+import gelato.riso.bossapi.service.manager.Manager;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
@@ -20,11 +20,11 @@ public class JwtUtils {
     private static final Key KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
     private static final JwtParser JWT_PARSER = Jwts.parserBuilder().setSigningKey(KEY).build();
 
-    public String generateToken(User user) {
+    public String generateToken(Manager manager) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("id", user.getIdToString());
-        claims.put("role", user.getRoles());
-        return doGenerateToken(claims, user.getUsername());
+        claims.put("id", manager.getIdToString());
+        claims.put("role", manager.getRoles());
+        return doGenerateToken(claims, manager.getUsername());
     }
 
     private String doGenerateToken(Map<String, Object> claims, String username) {

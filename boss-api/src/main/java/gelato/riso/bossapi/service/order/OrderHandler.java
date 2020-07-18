@@ -1,5 +1,7 @@
 package gelato.riso.bossapi.service.order;
 
+import java.util.List;
+
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
@@ -21,7 +23,7 @@ public class OrderHandler {
         return ReactiveSecurityContextHolder
                 .getContext()
                 .flatMap(orderService::getOrders)
-                .flatMap(orders -> ServerResponse.ok().bodyValue(orders));
+                .flatMap(orders -> ServerResponse.ok().bodyValue(new OrderList.Response(orders)));
     }
 
     public Mono<ServerResponse> start(ServerRequest request) {
@@ -44,19 +46,26 @@ public class OrderHandler {
                    }).flatMap(order -> ServerResponse.ok().bodyValue(order));
     }
 
-    private static class OrderStart {
+    static class OrderList {
+        @Value
+        static class Response {
+            List<Order> orders;
+        }
+    }
+
+    static class OrderStart {
         @Value
         @Builder
-        private static class Request {
+        static class Request {
             String storeId;
             String orderId;
         }
     }
 
-    private static class OrderFinish {
+    static class OrderFinish {
         @Value
         @Builder
-        private static class Request {
+        static class Request {
             String storeId;
             String orderId;
         }

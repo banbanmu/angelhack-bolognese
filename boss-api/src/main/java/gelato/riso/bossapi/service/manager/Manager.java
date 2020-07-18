@@ -1,4 +1,4 @@
-package gelato.riso.bossapi.service.user;
+package gelato.riso.bossapi.service.manager;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,7 +20,7 @@ import lombok.With;
 @Value
 @Builder
 @Document
-public class User implements UserDetails {
+public class Manager implements UserDetails {
     private static final long serialVersionUID = 3330985950829456765L;
 
     @Id
@@ -32,7 +32,7 @@ public class User implements UserDetails {
     @Default
     List<Role> roles = List.of(Role.ROLE_USER);
 
-    public static User of(String username, String password) {
+    public static Manager of(String username, String password) {
         return builder()
                 .username(username)
                 .password(password)

@@ -1,4 +1,4 @@
-package gelato.riso.bossapi.service.user;
+package gelato.riso.bossapi.service.manager;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,24 +11,24 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class ManagerService {
 
-    private final UserRepository userRepository;
+    private final ManagerRepository managerRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Mono<User> signUp(String username, String password) {
-        return userRepository.findByUsername(username)
-                             .flatMap(user -> {
+    public Mono<Manager> signUp(String username, String password) {
+        return managerRepository.findByUsername(username)
+                                .flatMap(user -> {
                                  // user already exists.
                                  return Mono.error(new UserAlreadyExistException());
                              })
-                             .defaultIfEmpty(User.of(username, passwordEncoder.encode(password)))
-                             .flatMap(user -> userRepository.insert((User) user));
+                                .defaultIfEmpty(Manager.of(username, passwordEncoder.encode(password)))
+                                .flatMap(user -> managerRepository.insert((Manager) user));
     }
 
-    public Mono<User> signIn(String username, String password) {
-        return userRepository.findByUsername(username)
-                             .flatMap(user -> {
+    public Mono<Manager> signIn(String username, String password) {
+        return managerRepository.findByUsername(username)
+                                .flatMap(user -> {
                                  String encodedPassword = user.getPassword();
                                  if (false == passwordEncoder.matches(password, encodedPassword)) {
                                      return Mono.error(new UnAuthorizedException());

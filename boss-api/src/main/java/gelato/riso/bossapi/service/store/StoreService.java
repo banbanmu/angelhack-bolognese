@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
+import gelato.riso.bossapi.service.store.Store.Category;
 import gelato.riso.bossapi.service.store.Store.Food;
 import gelato.riso.bossapi.support.exception.BaseException;
 import lombok.Getter;
@@ -21,14 +22,18 @@ public class StoreService {
 
     private final StoreRepository storeRepository;
 
-    public Mono<Store> getMyHome(SecurityContext context) {
+    public Mono<Store> getMyStore(SecurityContext context) {
         String id = context.getAuthentication().getCredentials().toString();
         return storeRepository.findById(id)
                               .switchIfEmpty(Mono.error(new StoreNotFoundException()));
     }
 
+    public Mono<List<Category>> getAllCategory() {
+        return Mono.just(List.of(Category.values()));
+    }
+
     public Mono<Store> registerStore(SecurityContext context, String name, String address,
-                                     String phoneNumber, String category, List<Food> menu) {
+                                     String phoneNumber, Category category, List<Food> menu) {
         return Mono.just(context.getAuthentication())
                    .map(authentication -> Store.builder()
                                                .id(new ObjectId(authentication.getCredentials().toString()))
@@ -42,7 +47,7 @@ public class StoreService {
     }
 
     public Mono<Store> editStore(SecurityContext context, String id, String name, String address,
-                                 String phoneNumber, String category, List<Food> menu) {
+                                 String phoneNumber, Category category, List<Food> menu) {
         return Mono.just(context.getAuthentication())
                    .map(Authentication::getCredentials)
                    .filter(Predicate.isEqual(id))

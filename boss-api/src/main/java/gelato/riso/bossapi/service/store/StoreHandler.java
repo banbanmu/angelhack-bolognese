@@ -1,7 +1,7 @@
 package gelato.riso.bossapi.service.store;
 
-
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import gelato.riso.bossapi.service.store.Store.Category;
 import gelato.riso.bossapi.service.store.Store.Food;
+import gelato.riso.bossapi.service.store.StoreHandler.AllCategory.CategoryResponse;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -21,12 +23,25 @@ public class StoreHandler {
 
     private final StoreService storeService;
 
-    public Mono<ServerResponse> getMyHome(ServerRequest request) {
+    public Mono<ServerResponse> getMyStore() {
         return ReactiveSecurityContextHolder
                 .getContext()
-                .flatMap(storeService::getMyHome)
+                .flatMap(storeService::getMyStore)
                 .flatMap(store -> ServerResponse.ok().bodyValue(store));
+    }
 
+    public Mono<ServerResponse> getAllCategory() {
+        return storeService.getAllCategory()
+                           .flatMap(categories -> {
+                               List<CategoryResponse> categoryResponses = categories.stream()
+                                                                                    .map(CategoryResponse::of)
+                                                                                    .collect(Collectors.toList());
+
+                               return ServerResponse.ok().bodyValue(
+                                       AllCategory.Response.builder()
+                                                           .categories(categoryResponses)
+                                                           .build());
+                           });
     }
 
     public Mono<ServerResponse> registerStore(ServerRequest request) {
@@ -54,28 +69,46 @@ public class StoreHandler {
                    }).flatMap(store -> ServerResponse.ok().build());
     }
 
-    private static class RegisterStore {
+    static class RegisterStore {
         @Value
         @Builder
-        private static class Request {
+        static class Request {
             String name;
             String address;
             String phoneNumber;
-            String category;
+            Category category;
             List<Food> menu;
         }
     }
 
-    private static class EditStore {
+    static class EditStore {
         @Value
         @Builder
-        private static class Request {
+        static class Request {
             String id;
             String name;
             String address;
             String phoneNumber;
-            String category;
+            Category category;
             List<Food> menu;
+        }
+    }
+
+    static class AllCategory {
+        @Value
+        @Builder
+        static class Response {
+            List<CategoryResponse> categories;
+        }
+
+        @Value
+        static class CategoryResponse {
+            String key;
+            String name;
+
+            static CategoryResponse of(Category category) {
+                return new CategoryResponse(category.name(), category.getKorean());
+            }
         }
     }
 }

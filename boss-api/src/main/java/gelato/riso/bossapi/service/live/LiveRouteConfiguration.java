@@ -1,4 +1,4 @@
-package gelato.riso.bossapi.service.user;
+package gelato.riso.bossapi.service.live;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,15 +9,16 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
-public class UserAuthRouteConfiguration {
+public class LiveRouteConfiguration {
 
-    private final UserAuthHandler userAuthHandler;
+    private final LiveHandler liveHandler;
 
     @Bean
-    public RouterFunction<?> userAuthRouterFunction() {
+    public RouterFunction<?> liveRouterFunction() {
         return RouterFunctions.route()
-                              .POST("/auth/signUp", userAuthHandler::signUp)
-                              .POST("/auth/signIn", userAuthHandler::signIn)
+                              .GET("/live/start", liveHandler::start)
+                              .GET("/live/stop", liveHandler::stop)
                               .build();
     }
+
 }

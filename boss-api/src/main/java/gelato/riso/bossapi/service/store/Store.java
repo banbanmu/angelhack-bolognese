@@ -7,6 +7,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
 @Value
@@ -18,7 +20,7 @@ public class Store {
     String name;
     String address;
     String phoneNumber;
-    String category;
+    Category category;
     List<Food> menu;
 
     @Value
@@ -28,6 +30,18 @@ public class Store {
         Integer price;
         String description;
         String lastCookVideoUrl;
+    }
+
+    @RequiredArgsConstructor
+    public enum Category {
+        KOREAN("한식"),
+        JAPANESE("일식"),
+        ASIAN("아시안"),
+        CHINESE("중식"),
+        WESTERN("양식");
+
+        @Getter
+        private final String korean;
     }
 
 }

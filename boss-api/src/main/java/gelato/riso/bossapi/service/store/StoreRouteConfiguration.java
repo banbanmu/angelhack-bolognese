@@ -16,9 +16,10 @@ public class StoreRouteConfiguration {
     @Bean
     public RouterFunction<?> storeRouterFunction() {
         return RouterFunctions.route()
-                              .GET("/store", storeHandler::getMyHome)
+                              .GET("/store", request -> storeHandler.getMyStore())
                               .POST("/store", storeHandler::registerStore)
                               .PUT("/store", storeHandler::editStore)
+                              .GET("/store/category", request -> storeHandler.getAllCategory())
                               .build();
     }
 

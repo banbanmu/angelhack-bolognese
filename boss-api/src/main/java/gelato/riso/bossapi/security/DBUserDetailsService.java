@@ -7,8 +7,8 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import gelato.riso.bossapi.service.user.UserRepository;
-import gelato.riso.bossapi.service.user.User;
+import gelato.riso.bossapi.service.manager.Manager;
+import gelato.riso.bossapi.service.manager.ManagerRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -16,19 +16,19 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DBUserDetailsService implements ReactiveUserDetailsService, ReactiveUserDetailsPasswordService {
 
-    private final UserRepository userRepository;
+    private final ManagerRepository managerRepository;
 
     @Override
     public Mono<UserDetails> findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                             .map(Function.identity());
+        return managerRepository.findByUsername(username)
+                                .map(Function.identity());
     }
 
     @Override
     public Mono<UserDetails> updatePassword(UserDetails userDetails, String newPassword) {
-        User user = (User) userDetails;
-        return userRepository.save(user.withPassword(newPassword))
-                             .map(Function.identity());
+        Manager manager = (Manager) userDetails;
+        return managerRepository.save(manager.withPassword(newPassword))
+                                .map(Function.identity());
     }
 
 }
