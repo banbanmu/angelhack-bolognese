@@ -11,7 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
-import gelato.riso.bossapi.utils.JwtUtils;
+import gelato.riso.bossapi.support.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
 import reactor.core.publisher.Mono;
 
@@ -36,7 +36,7 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
                                         .map(SimpleGrantedAuthority::new)
                                         .collect(Collectors.toList()))
                    .map(authorities -> new UsernamePasswordAuthenticationToken(
-                           allClaimsFromToken.getSubject(), null, authorities))
+                           allClaimsFromToken.getSubject(), allClaimsFromToken.get("id"), authorities))
                    .onErrorResume(t -> Mono.empty())
                    .map(Function.identity());
     }

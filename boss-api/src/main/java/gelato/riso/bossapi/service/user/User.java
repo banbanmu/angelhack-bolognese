@@ -1,4 +1,4 @@
-package gelato.riso.bossapi.user;
+package gelato.riso.bossapi.service.user;
 
 import java.util.Collection;
 import java.util.List;
@@ -64,6 +64,10 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return false;
+    }
+
+    public String getIdToString() {
+        return id.toHexString();
     }
 
     private enum Role {

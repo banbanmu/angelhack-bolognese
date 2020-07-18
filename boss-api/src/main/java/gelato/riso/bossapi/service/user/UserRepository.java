@@ -1,4 +1,4 @@
-package gelato.riso.bossapi.user;
+package gelato.riso.bossapi.service.user;
 
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import org.springframework.stereotype.Repository;

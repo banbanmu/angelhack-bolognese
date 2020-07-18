@@ -7,8 +7,8 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import gelato.riso.bossapi.user.UserRepository;
-import gelato.riso.bossapi.user.User;
+import gelato.riso.bossapi.service.user.UserRepository;
+import gelato.riso.bossapi.service.user.User;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 

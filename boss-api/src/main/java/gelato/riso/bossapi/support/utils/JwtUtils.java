@@ -1,11 +1,11 @@
-package gelato.riso.bossapi.utils;
+package gelato.riso.bossapi.support.utils;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import gelato.riso.bossapi.user.User;
+import gelato.riso.bossapi.service.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
@@ -22,6 +22,7 @@ public class JwtUtils {
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("id", user.getIdToString());
         claims.put("role", user.getRoles());
         return doGenerateToken(claims, user.getUsername());
     }
