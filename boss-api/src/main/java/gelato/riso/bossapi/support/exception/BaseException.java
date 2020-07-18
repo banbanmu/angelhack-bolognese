@@ -1,4 +1,4 @@
-package gelato.riso.bossapi.support;
+package gelato.riso.bossapi.support.exception;
 
 import org.springframework.http.HttpStatus;
 

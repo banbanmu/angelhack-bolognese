@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import gelato.riso.bossapi.user.User;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.experimental.UtilityClass;
@@ -13,11 +15,10 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class JwtUtils {
 
-    private static final String secret = "AENHAPBARMKTLMKMLWAOKGWAIWFKNENKNKLGN1243nkAFNK";
-
-    private static final long expirationTime = 28800;
-
-    private static final Key key = Keys.hmacShaKeyFor(secret.getBytes());
+    private static final String SECRET = "AENHAPBARMKTLMKMLWAOKGWAIWFKNENKNKLGN1243nkAFNK";
+    private static final long EXPIRATION_TIME = 28800;
+    private static final Key KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
+    private static final JwtParser JWT_PARSER = Jwts.parserBuilder().setSigningKey(KEY).build();
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
@@ -28,36 +29,28 @@ public class JwtUtils {
     private String doGenerateToken(Map<String, Object> claims, String username) {
 
         final Date createdDate = new Date();
-        final Date expirationDate = new Date(createdDate.getTime() + expirationTime * 1000);
+        final Date expirationDate = new Date(createdDate.getTime() + EXPIRATION_TIME * 1000);
 
         return Jwts.builder()
                    .setClaims(claims)
                    .setSubject(username)
                    .setIssuedAt(createdDate)
                    .setExpiration(expirationDate)
-                   .signWith(key)
+                   .signWith(KEY)
                    .compact();
     }
 
-//    public Claims getAllClaimsFromToken(String token) {
-//        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-//    }
-//
-//    public String getUsernameFromToken(String token) {
-//        return getAllClaimsFromToken(token).getSubject();
-//    }
-//
-//    public Date getExpirationDateFromToken(String token) {
-//        return getAllClaimsFromToken(token).getExpiration();
-//    }
-//
-//    private Boolean isTokenExpired(String token) {
-//        final Date expiration = getExpirationDateFromToken(token);
-//        return expiration.before(new Date());
-//    }
-//
-//    public Boolean validateToken(String token) {
-//        return !isTokenExpired(token);
-//    }
+    public Claims getAllClaimsFromToken(String token) {
+        return JWT_PARSER.parseClaimsJws(token).getBody();
+    }
+
+    public Date getExpirationDateFromToken(String token) {
+        return getAllClaimsFromToken(token).getExpiration();
+    }
+
+    public Boolean isTokenExpired(String token) {
+        final Date expiration = getExpirationDateFromToken(token);
+        return expiration.before(new Date());
+    }
 
 }

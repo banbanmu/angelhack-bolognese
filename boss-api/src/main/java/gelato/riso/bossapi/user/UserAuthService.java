@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import gelato.riso.bossapi.support.BaseException;
+import gelato.riso.bossapi.support.exception.BaseException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
