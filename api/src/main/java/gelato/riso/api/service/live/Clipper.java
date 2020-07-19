@@ -2,10 +2,14 @@ package gelato.riso.api.service.live;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.FileUtils;
 
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
@@ -14,8 +18,11 @@ import net.bramp.ffmpeg.builder.FFmpegBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import gelato.riso.api.service.live.LiveHandler.LiveStop.CookClipInfo;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -25,7 +32,6 @@ public class Clipper extends Thread {
     private static final FFmpeg FFMPEG;
     private static final FFmpegExecutor FFMPEG_EXECUTOR;
     private static final String COMPLEX_FILTER_FORMAT = "fade=in:st=%f:d=1, fade=out:st=%f:d=1; afade=in:st=%f:d=1, afade=out:st=%f:d=1";
-    private static final File ROOT_DIR = new File(ROOT_PATH);
     private static final AmazonS3 S3 = AmazonS3ClientBuilder.standard().withRegion(Regions.AP_NORTHEAST_2).build();
 
     static {
@@ -37,30 +43,35 @@ public class Clipper extends Thread {
         }
     }
 
+    private final String startDate;
     private final String userId;
     private final String clipDirPath;
     private final List<CookClipInfo> clipInfos;
     private final String bucketName;
 
-    private Clipper(Integer userId, List<CookClipInfo> clipInfos, String bucketName) {
+    private Clipper(String startDate, Integer userId, List<CookClipInfo> clipInfos, String bucketName) {
+        this.startDate = startDate;
         this.userId = Integer.toString(userId);
         clipDirPath = ROOT_PATH + userId + "_clip";
         this.clipInfos = new ArrayList<>(clipInfos);
         this.bucketName = bucketName;
     }
 
-    public static void start(Integer userId, List<CookClipInfo> clipInfos, String bucketName) {
-        Clipper clipper = new Clipper(userId, clipInfos, bucketName);
+    public static void start(Long startTimestamp, Integer userId, List<CookClipInfo> clipInfos, String bucketName) {
+        Clipper clipper = new Clipper(new SimpleDateFormat("yyyyMMdd").format(new Date(startTimestamp)),
+                                      userId, clipInfos, bucketName);
         clipper.start();
     }
 
     @Override
+    @SneakyThrows
     public void run() {
-        log.info("ROOT_DIR : {}", ROOT_DIR.getAbsolutePath());
+        File dateDir = new File(ROOT_PATH + startDate);
+        log.info("DATE_DIR : {}", dateDir.getAbsolutePath());
         File clipDir = Arrays
-                .stream(ROOT_DIR.listFiles())
+                .stream(dateDir.listFiles())
                 .filter(File::isDirectory)
-                .filter(dir -> dir.getName().startsWith(userId))
+                .filter(dir -> dir.getName().startsWith("channel_" + userId))
                 .findFirst()
                 .map(dir -> {
                     if (dir.renameTo(new File(clipDirPath))) {
@@ -102,11 +113,12 @@ public class Clipper extends Thread {
 
             String s3KeyName = userId + '_' + clipInfo.getName() + ".mp4";
             log.info(">>> Start upload S3. cut: {}, key: {}", cut, s3KeyName);
-            S3.putObject(bucketName, s3KeyName, new File(cut));
+            S3.putObject(buildPutObjectRequest(bucketName, s3KeyName, new File(cut)));
             log.info("<<< Finish upload S3. cut: {}, key: {}", cut, s3KeyName);
         }
         log.info("<<< Finish clip. video: {}, audio: {}", video, audio);
 
+        FileUtils.forceDelete(clipDir);
     }
 
     private static FFmpegBuilder mergeFFmpegBuilder(String video, String audio, String output) {
@@ -148,5 +160,9 @@ public class Clipper extends Thread {
                 .done();
     }
 
+    private static PutObjectRequest buildPutObjectRequest(String bucketName, String s3KeyName, File cut) {
+        return new PutObjectRequest(bucketName, s3KeyName, cut)
+                .withCannedAcl(CannedAccessControlList.PublicRead);
+    }
 
 }

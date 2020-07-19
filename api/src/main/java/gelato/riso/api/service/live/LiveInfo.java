@@ -4,10 +4,11 @@ import lombok.Value;
 
 @Value
 public class LiveInfo {
+    Long startTimeStamp;
     Integer userId;
     String channelName;
 
-    static LiveInfo of(Integer userId, String channelName) {
-        return new LiveInfo(userId, channelName);
+    static LiveInfo of(Long startTimeStamp, Integer userId, String channelName) {
+        return new LiveInfo(startTimeStamp, userId, channelName);
     }
 }

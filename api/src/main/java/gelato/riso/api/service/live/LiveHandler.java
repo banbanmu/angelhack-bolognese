@@ -38,6 +38,11 @@ public class LiveHandler {
                    }).flatMap(zip -> ServerResponse.ok().build());
     }
 
+    public Mono<ServerResponse> list() {
+        return liveService.list()
+                .flatMap(liveInfos -> ServerResponse.ok().bodyValue(liveInfos));
+    }
+
     static class LiveStart {
         @Value
         static class Response {
