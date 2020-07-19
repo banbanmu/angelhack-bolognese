@@ -1,7 +1,5 @@
 package gelato.riso.api.service.live;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -12,6 +10,7 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
+import gelato.riso.api.service.live.LiveHandler.LiveStop.CookClipInfo;
 import gelato.riso.recorder.RecordingSampleM;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -25,10 +24,13 @@ public class LiveService {
 
     private final String appId;
     private final ReactiveStringRedisTemplate redisTemplate;
+    private final ClipService clipService;
 
-    public LiveService(@Value("${recording.app.id}") String appId, ReactiveStringRedisTemplate redisTemplate) {
+    public LiveService(@Value("${recording.app.id}") String appId, ReactiveStringRedisTemplate redisTemplate,
+                       ClipService clipService) {
         this.appId = appId;
         this.redisTemplate = redisTemplate;
+        this.clipService = clipService;
     }
 
     public Mono<LiveInfo> start(SecurityContext context) {
@@ -39,22 +41,25 @@ public class LiveService {
         Date startDate = new Date();
         LiveInfo liveInfo = LiveInfo.of(startDate.getTime(), userId, channelName);
 
-        return redisTemplate.opsForValue().set(Integer.toString(liveInfo.getUserId()),
-                                               liveInfo.getStartTimeStamp() + ':' + liveInfo.getChannelName())
+        return redisTemplate.opsForValue().set(Integer.toString(liveInfo.getStoreId()),
+                                               liveInfo.getStartTimeStamp() + "AAAA" + liveInfo.getChannelName())
                             .then(Mono.just(liveInfo));
     }
 
-    public Mono<Boolean> stop(SecurityContext context) {
+    public Mono<Boolean> stop(SecurityContext context, List<CookClipInfo> clipInfos) {
         Integer userId = (Integer) context.getAuthentication().getCredentials();
         log.info("Recording stopped. userId: {}", userId);
-        return redisTemplate.opsForValue().delete(Integer.toString(userId));
+        return redisTemplate.opsForValue()
+                            .get(Integer.toString(userId))
+                            .map(value -> clipService.clippingVideo(userId, clipInfos, value))
+                            .flatMap(b -> redisTemplate.opsForValue().delete(Integer.toString(userId)));
     }
 
     public Mono<List<LiveInfo>> list() {
         return redisTemplate.keys("*")
                             .flatMap(key -> redisTemplate.opsForValue().get(key)
                                                          .map(value -> {
-                                                             String[] split = value.split(":");
+                                                             String[] split = value.split("AAAA");
                                                              return LiveInfo.of(Long.valueOf(split[0]),
                                                                                 Integer.valueOf(key), split[1]);
                                                          }))

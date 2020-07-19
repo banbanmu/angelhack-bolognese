@@ -15,7 +15,7 @@ public class Order {
     @Id
     ObjectId id;
     Integer storeId;
-    Integer userId;
+    String userId;
     String address;
     String phoneNumber;
     String menuName;

@@ -2,9 +2,6 @@ FROM dlsrb6342/manager-base:1.0.0
 
 COPY . /app
 
-WORKDIR /app
-RUN ./gradlew build
-
 WORKDIR /app/recorder
 RUN cp ./build/generated/sources/headers/java/main/* ./src/native/jni/
 RUN ./build.sh /usr/lib/jvm/java/include

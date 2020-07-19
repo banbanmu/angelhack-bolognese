@@ -29,19 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 public class Clipper extends Thread {
 
     private static final String ROOT_PATH = "./recording/";
-    private static final FFmpeg FFMPEG;
-    private static final FFmpegExecutor FFMPEG_EXECUTOR;
     private static final String COMPLEX_FILTER_FORMAT = "fade=in:st=%f:d=1, fade=out:st=%f:d=1; afade=in:st=%f:d=1, afade=out:st=%f:d=1";
     private static final AmazonS3 S3 = AmazonS3ClientBuilder.standard().withRegion(Regions.AP_NORTHEAST_2).build();
-
-    static {
-        try {
-            FFMPEG = new FFmpeg("/usr/bin/ffmpeg");
-            FFMPEG_EXECUTOR = new FFmpegExecutor(FFMPEG);
-        } catch (IOException e) {
-            throw new RuntimeException("FFMPEG init failed", e);
-        }
-    }
 
     private final String startDate;
     private final String userId;
@@ -55,17 +44,23 @@ public class Clipper extends Thread {
         clipDirPath = ROOT_PATH + userId + "_clip";
         this.clipInfos = new ArrayList<>(clipInfos);
         this.bucketName = bucketName;
+
+        log.info("clipDirPath: {}", clipDirPath);
     }
 
     public static void start(Long startTimestamp, Integer userId, List<CookClipInfo> clipInfos, String bucketName) {
         Clipper clipper = new Clipper(new SimpleDateFormat("yyyyMMdd").format(new Date(startTimestamp)),
                                       userId, clipInfos, bucketName);
+        log.info("START. userId: {}, clipInfos: {}", userId, clipInfos);
         clipper.start();
     }
 
     @Override
     @SneakyThrows
     public void run() {
+        FFmpeg FFMPEG = new FFmpeg("/usr/bin/ffmpeg");
+        FFmpegExecutor FFMPEG_EXECUTOR = new FFmpegExecutor(FFMPEG);
+
         File dateDir = new File(ROOT_PATH + startDate);
         log.info("DATE_DIR : {}", dateDir.getAbsolutePath());
         File clipDir = Arrays
@@ -74,8 +69,9 @@ public class Clipper extends Thread {
                 .filter(dir -> dir.getName().startsWith("channel_" + userId))
                 .findFirst()
                 .map(dir -> {
-                    if (dir.renameTo(new File(clipDirPath))) {
-                        return dir;
+                    File dest = new File(clipDirPath);
+                    if (dir.renameTo(dest)) {
+                        return dest;
                     }
                     throw new RuntimeException(String.format("Rename fail. userId : %s", userId));
                 }).orElseThrow(() -> new RuntimeException(String.format("Clipping fail. userId : %s", userId)));
@@ -108,7 +104,7 @@ public class Clipper extends Thread {
 
         log.info(">>> Start clip. video: {}, audio: {}", video, audio);
         for (CookClipInfo clipInfo : clipInfos) {
-            String cut = clipDirPath + '/' + clipInfo.getName() + ".mp4";
+            String cut = clipDirPath + '/' + userId + '_' + clipInfo.getName() + ".mp4";
             FFMPEG_EXECUTOR.createJob(clipFFmpegBuilder(clipInfo, merge, cut)).run();
 
             String s3KeyName = userId + '_' + clipInfo.getName() + ".mp4";
@@ -118,7 +114,10 @@ public class Clipper extends Thread {
         }
         log.info("<<< Finish clip. video: {}, audio: {}", video, audio);
 
-        FileUtils.forceDelete(clipDir);
+        for (File f : clipDir.listFiles()) {
+            f.delete();
+        }
+        clipDir.delete();
     }
 
     private static FFmpegBuilder mergeFFmpegBuilder(String video, String audio, String output) {
@@ -154,7 +153,6 @@ public class Clipper extends Thread {
                 .addOutput(cut)
                 .setStartOffset(startOffset, TimeUnit.MILLISECONDS)
                 .setDuration(duration, TimeUnit.MILLISECONDS)
-                .addExtraArgs("-async 1")
                 .setAudioCodec("aac")
                 .setVideoCodec("libx264")
                 .done();

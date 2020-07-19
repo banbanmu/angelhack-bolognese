@@ -25,7 +25,7 @@ public class LiveHandler {
                 .getContext()
                 .flatMap(liveService::start)
                 .flatMap(liveInfo -> ServerResponse.ok().bodyValue(
-                        new LiveStart.Response(liveInfo.getUserId(), liveInfo.getChannelName())));
+                        new LiveStart.Response(liveInfo.getStoreId(), liveInfo.getChannelName())));
     }
 
     public Mono<ServerResponse> stop(ServerRequest request) {
@@ -34,8 +34,8 @@ public class LiveHandler {
                    .flatMap(tuple -> {
                        SecurityContext context = tuple.getT1();
                        LiveStop.Request param = tuple.getT2();
-                       return Mono.zip(liveService.stop(context), clipService.clippingVideo(context, param.clipInfos));
-                   }).flatMap(zip -> ServerResponse.ok().build());
+                       return liveService.stop(context, param.clipInfos);
+                   }).flatMap(b -> ServerResponse.ok().build());
     }
 
     public Mono<ServerResponse> list() {
