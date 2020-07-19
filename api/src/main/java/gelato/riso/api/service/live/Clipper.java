@@ -9,8 +9,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.FileUtils;
-
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.builder.FFmpegBuilder;
@@ -29,8 +27,19 @@ import lombok.extern.slf4j.Slf4j;
 public class Clipper extends Thread {
 
     private static final String ROOT_PATH = "./recording/";
+    private static final FFmpeg FFMPEG;
+    private static final FFmpegExecutor FFMPEG_EXECUTOR;
     private static final String COMPLEX_FILTER_FORMAT = "fade=in:st=%f:d=1, fade=out:st=%f:d=1; afade=in:st=%f:d=1, afade=out:st=%f:d=1";
     private static final AmazonS3 S3 = AmazonS3ClientBuilder.standard().withRegion(Regions.AP_NORTHEAST_2).build();
+
+    static {
+        try {
+            FFMPEG = new FFmpeg("/usr/bin/ffmpeg");
+            FFMPEG_EXECUTOR = new FFmpegExecutor(FFMPEG);
+        } catch (IOException e) {
+            throw new RuntimeException("FFMPEG init failed", e);
+        }
+    }
 
     private final String startDate;
     private final String userId;
@@ -58,9 +67,6 @@ public class Clipper extends Thread {
     @Override
     @SneakyThrows
     public void run() {
-        FFmpeg FFMPEG = new FFmpeg("/usr/bin/ffmpeg");
-        FFmpegExecutor FFMPEG_EXECUTOR = new FFmpegExecutor(FFMPEG);
-
         File dateDir = new File(ROOT_PATH + startDate);
         log.info("DATE_DIR : {}", dateDir.getAbsolutePath());
         File clipDir = Arrays
@@ -135,7 +141,7 @@ public class Clipper extends Thread {
     private static FFmpegBuilder clipFFmpegBuilder(CookClipInfo clipInfo, String merge, String cut) {
 
         long startOffset = clipInfo.getStartMilli() - 1000;
-        long duration = clipInfo.getDurationMilli() + 1000;
+        long duration = clipInfo.getDurationMilli() + 2000;
         if (startOffset < 0) {
             startOffset = 0;
         }
