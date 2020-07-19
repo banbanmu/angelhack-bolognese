@@ -22,6 +22,10 @@ public class Order {
     @With
     State state;
 
+    public String getId() {
+        return id.toHexString();
+    }
+
     public enum State {
         NOT_STARTED,
         STARTED,
