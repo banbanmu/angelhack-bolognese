@@ -17,7 +17,7 @@ public class LiveRouteConfiguration {
     public RouterFunction<?> liveRouterFunction() {
         return RouterFunctions.route()
                               .GET("/live/start", request -> liveHandler.start())
-                              .GET("/live/stop", liveHandler::stop)
+                              .POST("/live/stop", liveHandler::stop)
                               .build();
     }
 

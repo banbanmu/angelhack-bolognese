@@ -29,7 +29,7 @@ public class OrderHandler {
     public Mono<ServerResponse> start(ServerRequest request) {
         return Mono.zip(ReactiveSecurityContextHolder.getContext(),
                         request.bodyToMono(OrderStart.Request.class))
-                   .map(tuple -> {
+                   .flatMap(tuple -> {
                        SecurityContext context = tuple.getT1();
                        OrderStart.Request param = tuple.getT2();
                        return orderService.start(context, param.orderId, param.storeId);
@@ -39,7 +39,7 @@ public class OrderHandler {
     public Mono<ServerResponse> finish(ServerRequest request) {
         return Mono.zip(ReactiveSecurityContextHolder.getContext(),
                         request.bodyToMono(OrderFinish.Request.class))
-                   .map(tuple -> {
+                   .flatMap(tuple -> {
                        SecurityContext context = tuple.getT1();
                        OrderFinish.Request param = tuple.getT2();
                        return orderService.finish(context, param.orderId, param.storeId);

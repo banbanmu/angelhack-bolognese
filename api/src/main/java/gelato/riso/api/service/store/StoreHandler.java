@@ -11,7 +11,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import gelato.riso.api.service.store.Store.Category;
 import gelato.riso.api.service.store.Store.Food;
-import gelato.riso.api.service.store.StoreHandler.AllCategory.CategoryResponse;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -27,7 +26,7 @@ public class StoreHandler {
         return ReactiveSecurityContextHolder
                 .getContext()
                 .flatMap(storeService::getMyStore)
-                .flatMap(store -> ServerResponse.ok().bodyValue(store));
+                .flatMap(store -> ServerResponse.ok().bodyValue(MyStore.Response.from(store)));
     }
 
     public Mono<ServerResponse> getAllCategory() {
@@ -35,7 +34,8 @@ public class StoreHandler {
                            .flatMap(categories -> {
                                List<CategoryResponse> categoryResponses = categories.stream()
                                                                                     .map(CategoryResponse::of)
-                                                                                    .collect(Collectors.toList());
+                                                                                    .collect(Collectors
+                                                                                                     .toList());
 
                                return ServerResponse.ok().bodyValue(
                                        AllCategory.Response.builder()
@@ -67,6 +67,31 @@ public class StoreHandler {
                                context, param.id, param.name, param.address,
                                param.phoneNumber, param.category, param.menu);
                    }).flatMap(store -> ServerResponse.ok().build());
+    }
+
+    static class MyStore {
+        @Value
+        @Builder
+        static class Response {
+            Integer id;
+            String name;
+            String address;
+            String phoneNumber;
+            CategoryResponse category;
+            List<Food> menu;
+
+            static Response from(Store store) {
+                return builder()
+                        .id(store.getId())
+                        .name(store.getName())
+                        .address(store.getAddress())
+                        .phoneNumber(store.getPhoneNumber())
+                        .category(CategoryResponse.of(store.getCategory()))
+                        .menu(store.getMenu())
+                        .build();
+            }
+        }
+
     }
 
     static class RegisterStore {
@@ -101,14 +126,15 @@ public class StoreHandler {
             List<CategoryResponse> categories;
         }
 
-        @Value
-        static class CategoryResponse {
-            String key;
-            String name;
+    }
 
-            static CategoryResponse of(Category category) {
-                return new CategoryResponse(category.name(), category.getKorean());
-            }
+    @Value
+    static class CategoryResponse {
+        String key;
+        String name;
+
+        static CategoryResponse of(Category category) {
+            return new CategoryResponse(category.name(), category.getKorean());
         }
     }
 }

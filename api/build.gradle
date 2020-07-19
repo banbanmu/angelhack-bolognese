@@ -29,6 +29,7 @@ dependencies {
     implementation 'com.google.guava:guava:29.0-jre'
 
     implementation 'net.bramp.ffmpeg:ffmpeg:0.6.2'
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.11.822'
 
     // annotation processors
     compileOnly 'org.projectlombok:lombok'

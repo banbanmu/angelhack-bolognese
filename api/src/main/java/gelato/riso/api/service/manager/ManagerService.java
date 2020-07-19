@@ -7,8 +7,10 @@ import org.springframework.stereotype.Service;
 import gelato.riso.api.support.exception.BaseException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ManagerService {
@@ -20,6 +22,7 @@ public class ManagerService {
         return managerRepository.findByUsername(username)
                                 .flatMap(user -> {
                                     // user already exists.
+                                    log.warn("User Already Exists. username: {}", username);
                                     return Mono.error(new UserAlreadyExistException());
                                 })
                                 .defaultIfEmpty(
@@ -34,7 +37,7 @@ public class ManagerService {
                                     if (false == passwordEncoder.matches(password, encodedPassword)) {
                                         return Mono.error(new UnAuthorizedException());
                                     }
-
+                                    log.info("Login Success. username: {}", username);
                                     return Mono.just(user);
                                 }).switchIfEmpty(Mono.error(new UnAuthorizedException()));
     }

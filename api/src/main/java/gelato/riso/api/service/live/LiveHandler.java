@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 public class LiveHandler {
 
     private final LiveService liveService;
+    private final ClipService clipService;
 
     public Mono<ServerResponse> start() {
         return ReactiveSecurityContextHolder
@@ -30,11 +31,11 @@ public class LiveHandler {
     public Mono<ServerResponse> stop(ServerRequest request) {
         return Mono.zip(ReactiveSecurityContextHolder.getContext(),
                         request.bodyToMono(LiveStop.Request.class))
-                   .map(tuple -> {
+                   .flatMap(tuple -> {
                        SecurityContext context = tuple.getT1();
                        LiveStop.Request param = tuple.getT2();
-                       return liveService.stop(context, param.clipInfos);
-                   }).flatMap(b -> ServerResponse.ok().build());
+                       return Mono.zip(liveService.stop(context), clipService.clippingVideo(context, param.clipInfos));
+                   }).flatMap(zip -> ServerResponse.ok().build());
     }
 
     static class LiveStart {
@@ -56,8 +57,8 @@ public class LiveHandler {
         @Builder
         static class CookClipInfo {
             String name;
-            Integer startSecond;
-            Integer duration;
+            Long startMilli;
+            Long durationMilli;
         }
     }
 }
