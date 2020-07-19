@@ -1,16 +1,15 @@
 package gelato.riso.recorder;
 
-public class RecordingWorkerThread extends Thread {
-    private final RecordingSampleM ars;
-    private final String[] args;
+import lombok.RequiredArgsConstructor;
 
-    RecordingWorkerThread(RecordingSampleM ars, String[] args) {
-        this.ars = ars;
-        this.args = args.clone();
-    }
+@RequiredArgsConstructor
+class RecordingWorkerThread extends Thread {
+    private final RecordingSampleM ars;
+    private final String appId;
+    private final String channelId;
 
     @Override
     public void run() {
-        ars.createChannel(args);
+        ars.createChannel(appId, channelId);
     }
 }

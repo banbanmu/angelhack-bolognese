@@ -2,7 +2,6 @@ package gelato.riso.api.service.store;
 
 import java.util.List;
 
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,7 +15,7 @@ import lombok.Value;
 @Document
 public class Store {
     @Id
-    ObjectId id;
+    Integer id;
     String name;
     String address;
     String phoneNumber;

@@ -11,6 +11,6 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface OrderRepository extends ReactiveMongoRepository<Order, String> {
 
-    Flux<Order> findAllByStoreIdAndStateIsNot(String storeId, State state);
+    Flux<Order> findAllByStoreIdAndStateIsNot(Integer storeId, State state);
     Mono<Order> findByIdAndState(ObjectId id, State state);
 }

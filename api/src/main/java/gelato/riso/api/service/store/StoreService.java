@@ -25,7 +25,7 @@ public class StoreService {
     private final StoreRepository storeRepository;
 
     public Mono<Store> getMyStore(SecurityContext context) {
-        String id = context.getAuthentication().getCredentials().toString();
+        Integer id = (Integer) context.getAuthentication().getCredentials();
         return storeRepository.findById(id)
                               .switchIfEmpty(Mono.error(new StoreNotFoundException()));
     }
@@ -38,7 +38,7 @@ public class StoreService {
                                      String phoneNumber, Category category, List<Food> menu) {
         return Mono.just(context.getAuthentication())
                    .map(authentication -> Store.builder()
-                                               .id(new ObjectId(authentication.getCredentials().toString()))
+                                               .id((Integer) authentication.getCredentials())
                                                .name(name)
                                                .address(address)
                                                .phoneNumber(phoneNumber)
@@ -48,14 +48,14 @@ public class StoreService {
                    .flatMap(storeRepository::insert);
     }
 
-    public Mono<Store> editStore(SecurityContext context, String id, String name, String address,
+    public Mono<Store> editStore(SecurityContext context, Integer id, String name, String address,
                                  String phoneNumber, Category category, List<Food> menu) {
         return Mono.just(context.getAuthentication())
                    .map(Authentication::getCredentials)
                    .filter(Predicate.isEqual(id))
                    .switchIfEmpty(Mono.error(new NotAllowedEditException()))
                    .then(Mono.just(Store.builder()
-                                        .id(new ObjectId(id))
+                                        .id(id)
                                         .name(name)
                                         .address(address)
                                         .phoneNumber(phoneNumber)

@@ -16,7 +16,7 @@ public class LiveRouteConfiguration {
     @Bean
     public RouterFunction<?> liveRouterFunction() {
         return RouterFunctions.route()
-                              .GET("/live/start", liveHandler::start)
+                              .GET("/live/start", request -> liveHandler.start())
                               .GET("/live/stop", liveHandler::stop)
                               .build();
     }

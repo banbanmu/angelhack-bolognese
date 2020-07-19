@@ -20,23 +20,23 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     public Mono<List<Order>> getOrders(SecurityContext context) {
-        String storeId = context.getAuthentication().getCredentials().toString();
+        Integer storeId = (Integer) context.getAuthentication().getCredentials();
         return orderRepository.findAllByStoreIdAndStateIsNot(storeId, State.FINISHED)
                               .collectList();
     }
 
-    public Mono<Order> start(SecurityContext context, String orderId, String storeId) {
-        String userId = context.getAuthentication().getCredentials().toString();
+    public Mono<Order> start(SecurityContext context, String orderId, Integer storeId) {
+        Integer userId = (Integer) context.getAuthentication().getCredentials();
         return editOrderState(userId, orderId, storeId, State.NOT_STARTED, State.STARTED);
     }
 
-    public Mono<Order> finish(SecurityContext context, String orderId, String storeId) {
-        String userId = context.getAuthentication().getCredentials().toString();
+    public Mono<Order> finish(SecurityContext context, String orderId, Integer storeId) {
+        Integer userId = (Integer) context.getAuthentication().getCredentials();
         return editOrderState(userId, orderId, storeId, State.STARTED, State.FINISHED);
     }
 
     private Mono<Order> editOrderState(
-            String userId, String orderId, String storeId, State currentState, State newState) {
+            Integer userId, String orderId, Integer storeId, State currentState, State newState) {
         if (false == storeId.equals(userId)) {
             return Mono.error(new NotAllowedOrderEditException());
         }

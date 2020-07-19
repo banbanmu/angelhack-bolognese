@@ -14,8 +14,8 @@ import lombok.With;
 public class Order {
     @Id
     ObjectId id;
-    String storeId;
-    String userId;
+    Integer storeId;
+    Integer userId;
     String address;
     String phoneNumber;
     String menuName;

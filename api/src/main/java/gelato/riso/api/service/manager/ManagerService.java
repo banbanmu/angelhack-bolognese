@@ -16,26 +16,27 @@ public class ManagerService {
     private final ManagerRepository managerRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Mono<Manager> signUp(String username, String password) {
+    public Mono<Manager> signUp(String username, String password, String phoneNumber) {
         return managerRepository.findByUsername(username)
                                 .flatMap(user -> {
-                                 // user already exists.
-                                 return Mono.error(new UserAlreadyExistException());
-                             })
-                                .defaultIfEmpty(Manager.of(username, passwordEncoder.encode(password)))
+                                    // user already exists.
+                                    return Mono.error(new UserAlreadyExistException());
+                                })
+                                .defaultIfEmpty(
+                                        Manager.of(username, passwordEncoder.encode(password), phoneNumber))
                                 .flatMap(user -> managerRepository.insert((Manager) user));
     }
 
     public Mono<Manager> signIn(String username, String password) {
         return managerRepository.findByUsername(username)
                                 .flatMap(user -> {
-                                 String encodedPassword = user.getPassword();
-                                 if (false == passwordEncoder.matches(password, encodedPassword)) {
-                                     return Mono.error(new UnAuthorizedException());
-                                 }
+                                    String encodedPassword = user.getPassword();
+                                    if (false == passwordEncoder.matches(password, encodedPassword)) {
+                                        return Mono.error(new UnAuthorizedException());
+                                    }
 
-                                 return Mono.just(user);
-                             }).switchIfEmpty(Mono.error(new UnAuthorizedException()));
+                                    return Mono.just(user);
+                                }).switchIfEmpty(Mono.error(new UnAuthorizedException()));
     }
 
     private static final class UnAuthorizedException extends BaseException {

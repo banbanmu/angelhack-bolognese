@@ -85,7 +85,7 @@ public class StoreHandler {
         @Value
         @Builder
         static class Request {
-            String id;
+            Integer id;
             String name;
             String address;
             String phoneNumber;

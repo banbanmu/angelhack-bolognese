@@ -2,9 +2,9 @@ package gelato.riso.api.service.manager;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -25,19 +25,24 @@ import lombok.With;
 public class Manager implements UserDetails {
     private static final long serialVersionUID = 3330985950829456765L;
 
+    private static final AtomicInteger COUNTER = new AtomicInteger(1000);
+
     @Id
-    ObjectId id;
+    @Default
+    Integer id = COUNTER.getAndIncrement();
     @Indexed
     String username;
     @With
     String password;
+    String phoneNumber;
     @Default
     List<Role> roles = Lists.newArrayList(Role.ROLE_USER);
 
-    public static Manager of(String username, String password) {
+    public static Manager of(String username, String password, String phoneNumber) {
         return builder()
                 .username(username)
                 .password(password)
+                .phoneNumber(phoneNumber)
                 .build();
     }
 
@@ -66,10 +71,6 @@ public class Manager implements UserDetails {
     @Override
     public boolean isEnabled() {
         return false;
-    }
-
-    public String getIdToString() {
-        return id.toHexString();
     }
 
     private enum Role {

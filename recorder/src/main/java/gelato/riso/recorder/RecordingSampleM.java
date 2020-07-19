@@ -41,6 +41,7 @@ public class RecordingSampleM implements RecordingEventHandler {
     private int width;
     private int height;
 
+    private final long uid;
     private String storageDir = "./";
     private final AtomicBoolean stopped = new AtomicBoolean(false);
     private boolean m_receivingAudio;
@@ -63,25 +64,28 @@ public class RecordingSampleM implements RecordingEventHandler {
     public static final int VERTICALPRESENTATION_LAYOUT = 2;
     private String userAccount = "";
 
-    public RecordingSampleM(RecordingSDK recording) {
+    public RecordingSampleM(long uid, RecordingSDK recording) {
         RecordingSDKInstance = recording;
         RecordingSDKInstance.registerOberserver(this);
+        this.uid = uid;
     }
 
-    public static void start(String... args) {
+    public static void start(long uid, String appId, String channelId) {
         RecordingSDK RecordingSdk = new RecordingSDK();
-        RecordingSampleM ars = new RecordingSampleM(RecordingSdk);
-        Thread thread = new RecordingWorkerThread(ars, args);
+        RecordingSampleM ars = new RecordingSampleM(uid, RecordingSdk);
+        Thread thread = new RecordingWorkerThread(ars, appId, channelId);
         thread.start();
-        while (true) {
-            if (ars.stopped.get() || !thread.isAlive()) {
-                log.info("Jni layer has been exited,now exiting Java...!");
-
-                break;
+        while (!ars.stopped.get()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+                System.out.println("Thread was interrupted, Failed to complete operation");
             }
         }
         log.info("exit java process...");
         ars.unRegister();
+        ars.stopService();
     }
 
     public void unRegister() {
@@ -143,6 +147,9 @@ public class RecordingSampleM implements RecordingEventHandler {
         log.info("RecordingSDK onUserOffline uid:" + uid + ",offline reason:" + reason);
         m_peers.remove(uid);
         //PrintUsersInfo(m_peers);
+        if (uid == this.uid) {
+            stopped.compareAndSet(false, true);
+        }
         SetVideoMixingLayout();
     }
 
@@ -667,11 +674,8 @@ public class RecordingSampleM implements RecordingEventHandler {
     }
 
     @SuppressWarnings("DuplicatedCode")
-    public void createChannel(String[] args) {
+    public void createChannel(String appId, String channelId) {
         int uid = 0;
-        String appId;
-        String channelKey = "";
-        String name;
         int channelProfile = 0;
 
         String decryptionMode = "";
@@ -680,8 +684,8 @@ public class RecordingSampleM implements RecordingEventHandler {
 
         int idleLimitSec = 5 * 60; // 300s
 
-        String applitePath;
-        String recordFileRootDir = "";
+        String applitePath = "recorder/bin";
+        String recordFileRootDir = "recording";
         String cfgFilePath = "";
         int proxyType = 1;
         String proxyServer = "";
@@ -710,225 +714,6 @@ public class RecordingSampleM implements RecordingEventHandler {
         int logLevel = 5;
 
         int audioProfile = 0;
-
-        // paser command line parameters
-        if (args.length % 2 != 0) {
-            log.info("command line parameters error, should be '--key value' format!");
-            return;
-        }
-        String key;
-        String value;
-        Map<String, String> map = new HashMap<>();
-        if (0<args.length) {
-            for (int i = 0; i<args.length - 1; i++) {
-                key = args[i];
-                value = args[i + 1];
-                map.put(key, value);
-            }
-        }
-        // prefer to use CmdLineParser or annotation
-        Object Appid = map.get("--appId");
-        Object Uid = map.get("--uid");
-        Object UserAccount = map.get("--userAccount");
-        Object Channel = map.get("--channel");
-        Object AppliteDir = map.get("--appliteDir");
-        Object ChannelKey = map.get("--channelKey");
-        Object ChannelProfile = map.get("--channelProfile");
-        Object IsAudioOnly = map.get("--isAudioOnly");
-        Object IsVideoOnly = map.get("--isVideoOnly");
-        Object IsMixingEnabled = map.get("--isMixingEnabled");
-        Object MixResolution = map.get("--mixResolution");
-        Object MixedVideoAudio = map.get("--mixedVideoAudio");
-        Object DecryptionMode = map.get("--decryptionMode");
-        Object Secret = map.get("--secret");
-        Object Idle = map.get("--idle");
-        Object RecordFileRootDir = map.get("--recordFileRootDir");
-        Object LowUdpPort = map.get("--lowUdpPort");
-        Object HighUdpPort = map.get("--highUdpPort");
-        Object GetAudioFrame = map.get("--getAudioFrame");
-        Object GetVideoFrame = map.get("--getVideoFrame");
-        Object CaptureInterval = map.get("--captureInterval");
-        Object CfgFilePath = map.get("--cfgFilePath");
-        Object StreamType = map.get("--streamType");
-        Object TriggerMode = map.get("--triggerMode");
-        Object ProxyType = map.get("--proxyType");
-        Object ProxyServer = map.get("--proxyServer");
-        Object AudioProfile = map.get("--audioProfile");
-        Object DefaultVideoBg = map.get("--defaultVideoBg");
-        Object DefaultUserBg = map.get("--defaultUserBg");
-        Object LogLevel = map.get("--logLevel");
-        Object AudioIndicationInterval = map.get("--audioIndicationInterval");
-        Object LayoutMode = map.get("--layoutMode");
-        Object MaxResolutionUid = map.get("--maxResolutionUid");
-        Object MaxResolutionUserAccount = map.get("--maxResolutionUserAccount");
-        Object AutoSubscribe = map.get("--autoSubscribe");
-        Object EnableCloudProxy = map.get("--enableCloudProxy");
-        Object SubscribeVideoUids = map.get("--subscribeVideoUids");
-        Object SubscribeAudioUids = map.get("--subscribeAudioUids");
-        Object KeepLastFrame = map.get("--keepLastFrame");
-
-        if (Appid == null || Uid == null && UserAccount == null || Channel == null || AppliteDir == null) {
-            // print usage
-            String usage = "java RecordingSDK --appId STRING --uid UINTEGER32 --userAccount STRING --channel STRING --appliteDir STRING --channelKey STRING --channelProfile UINTEGER32 --isAudioOnly --isVideoOnly --isMixingEnabled --mixResolution STRING --mixedVideoAudio --decryptionMode STRING --secret STRING --idle INTEGER32 --recordFileRootDir STRING --lowUdpPort INTEGER32 --highUdpPort INTEGER32 --getAudioFrame UINTEGER32 --getVideoFrame UINTEGER32 --captureInterval INTEGER32 --cfgFilePath STRING --streamType UINTEGER32 --triggerMode INTEGER32 \r\n --appId     (App Id/must) \r\n --uid     (User Id default is 0/ one of uid and user account is must)  \r\n --channel     (Channel Id/must) \r\n --appliteDir     (directory of app lite 'AgoraCoreService', Must pointer to 'Agora_Server_SDK_for_Linux_FULL/bin/' folder/must) \r\n --channelKey     (channelKey/option)\r\n --channelProfile     (channel_profile:(0:COMMUNICATION),(1:broadcast) default is 0/option)  \r\n --isAudioOnly     (Default 0:A/V, 1:AudioOnly (0:1)/option) \r\n --isVideoOnly     (Default 0:A/V, 1:VideoOnly (0:1)/option)\r\n --isMixingEnabled     (Mixing Enable? (0:1)/option)\r\n --mixResolution     (change default resolution for vdieo mix mode/option)                 \r\n --mixedVideoAudio     (mixVideoAudio:(0:seperated Audio,Video) (1:mixed Audio & Video with legacy codec) (2:mixed Audio & Video with new codec) default is 0 /option)                 \r\n --decryptionMode     (decryption Mode, default is NULL/option)                 \r\n --secret     (input secret when enable decryptionMode/option)                 \r\n --idle     (Default 300s, should be above 3s/option)                 \r\n --recordFileRootDir     (recording file root dir/option)                 \r\n --lowUdpPort     (default is random value/option)                 \r\n --highUdpPort     (default is random value/option)                 \r\n --getAudioFrame     (default 0 (0:save as file, 1:aac frame, 2:pcm frame, 3:mixed pcm frame) (Can't combine with isMixingEnabled) /option)                 \r\n --getVideoFrame     (default 0 (0:save as file, 1:h.264, 2:yuv, 3:jpg buffer, 4:jpg file, 5:jpg file and video file) (Can't combine with isMixingEnabled) /option)              \r\n --captureInterval     (default 5 (Video snapshot interval (second)))                 \r\n --cfgFilePath     (config file path / option)                 \r\n --streamType     (remote video stream type(0:STREAM_HIGH,1:STREAM_LOW), default is 0/option)  \r\n --triggerMode     (triggerMode:(0: automatically mode, 1: manually mode) default is 0/option) \r\n --proxyType    proxyType:proxyServer format type, 0:self socks5 proxy server, 1:cloud proxy domain, 2:proxy LBS server list. default is 1/option \r\n --proxyServer     proxyServer:format ip:port, eg,\"127.0.0.1:1080\"/option \r\n --defaultVideoBg    (default user background image path/option) \r\n --defaultUserBg (default user background image path/option))  \r\n --audioProfile (audio profile(0: standard single channel, 1: high quality single channel, 2: high quality two channels) defualt is 0/option)   \r\n --logLevel (log level default INFO/option) \r\n --audioIndicationInterval(0: no indication, audio indication interval(ms) default is 0/option) \r\n --layoutMode    (mix video layout mode:(0: default layout, 1:bestFit Layout mode, 2:vertical presentation Layout mode, default is 0/option)(combine with isMixingEnabled)) \r\n --maxResolutionUid    (max resolution uid (uid with maxest resolution under vertical presentation Layout mode  ( default is -1 /option))\r\n --maxResolutionUserAccount (max resolution user account (user account with maxest resolution under vertical presentation layout mode )) --keepLastFrame (Whether to keep user last frame when user's video stream stop(0: not keep, 1: keep, default 0/option) \r\n --autoSubscribe (Auto subscribe video/audio streams of each uid. (0: false 1:true, default 1/option)) \r\n --subscribeVideoUids (subcsribe video stream of specified uids. seperated with commas, like 1234,2345 /option) \r\n --subscribeAudioUids (subscribe audio stream of specified uids seperated by commos, like 1234,2345 /option) \r\n --enableCloudProxy (Enable cloud proxy or not (0: not enable, 1 : enable, default 0/option)";
-            log.info("Usage:" + usage);
-            return;
-        }
-        if (Uid != null) {
-            uid = Integer.parseInt(String.valueOf(Uid));
-        }
-
-        if (UserAccount != null) {
-            userAccount = String.valueOf(UserAccount);
-        }
-
-        appId = String.valueOf(Appid);
-        name = String.valueOf(Channel);
-        applitePath = String.valueOf(AppliteDir);
-
-        if (ChannelKey != null) {
-            channelKey = String.valueOf(ChannelKey);
-        }
-        if (ChannelProfile != null) {
-            channelProfile = Integer.parseInt(String.valueOf(ChannelProfile));
-        }
-        if (!checkEnumValue(channelProfile, 1, "Invalid channel profile value :" + channelProfile)) {
-            return;
-        }
-        if (DecryptionMode != null) {
-            decryptionMode = String.valueOf(DecryptionMode);
-        }
-        if (Secret != null) {
-            secret = String.valueOf(Secret);
-        }
-        if (MixResolution != null) {
-            mixResolution = String.valueOf(MixResolution);
-        }
-        if (Idle != null) {
-            idleLimitSec = Integer.parseInt(String.valueOf(Idle));
-        }
-        if (RecordFileRootDir != null) {
-            recordFileRootDir = String.valueOf(RecordFileRootDir);
-        }
-        if (CfgFilePath != null) {
-            cfgFilePath = String.valueOf(CfgFilePath);
-        }
-        if (LowUdpPort != null) {
-            lowUdpPort = Integer.parseInt(String.valueOf(LowUdpPort));
-        }
-        if (HighUdpPort != null) {
-            highUdpPort = Integer.parseInt(String.valueOf(HighUdpPort));
-        }
-        if (IsAudioOnly != null && Integer.parseInt(String.valueOf(IsAudioOnly)) == 1) {
-            isAudioOnly = true;
-        }
-        if (IsVideoOnly != null && Integer.parseInt(String.valueOf(IsVideoOnly)) == 1) {
-            isVideoOnly = true;
-        }
-        if (IsMixingEnabled != null && Integer.parseInt(String.valueOf(IsMixingEnabled)) == 1) {
-            isMixingEnabled = true;
-        }
-        if (MixedVideoAudio != null) {
-            mixedVideoAudio = Integer.parseInt(String.valueOf(MixedVideoAudio));
-        }
-        if (!checkEnumValue(mixedVideoAudio, 2, "Invalid mixedVideoAudio :" + mixedVideoAudio)) {
-            return;
-        }
-        if (GetAudioFrame != null) {
-            getAudioFrame = Integer.parseInt(String.valueOf(GetAudioFrame));
-        }
-        if (!checkEnumValue(getAudioFrame, 3, "Invalid getAudioFrame value : " + getAudioFrame)) {
-            return;
-        }
-        if (GetVideoFrame != null) {
-            getVideoFrame = Integer.parseInt(String.valueOf(GetVideoFrame));
-        }
-        if (!checkEnumValue(getVideoFrame, 5, "Invalid getVideoFrame value : " + getVideoFrame)) {
-            return;
-        }
-        if (StreamType != null) {
-            streamType = Integer.parseInt(String.valueOf(StreamType));
-        }
-        if (!checkEnumValue(streamType, 1, "Invalid streamType value : " + streamType)) {
-            return;
-        }
-        if (KeepLastFrame != null) {
-            keepLastFrame = Integer.parseInt(String.valueOf(KeepLastFrame));
-        }
-        if (CaptureInterval != null) {
-            captureInterval = Integer.parseInt(String.valueOf(CaptureInterval));
-        }
-        if (AudioIndicationInterval != null) {
-            audioIndicationInterval = Integer.parseInt(String.valueOf(AudioIndicationInterval));
-        }
-        if (TriggerMode != null) {
-            triggerMode = Integer.parseInt(String.valueOf(TriggerMode));
-        }
-        if (ProxyType != null) {
-            proxyType = Integer.parseInt(String.valueOf(ProxyType));
-        }
-        if (ProxyServer != null) {
-            proxyServer = String.valueOf(ProxyServer);
-        }
-        if (AudioProfile != null) {
-            audioProfile = Integer.parseInt(String.valueOf(AudioProfile));
-        }
-        if (DefaultVideoBg != null) {
-            defaultVideoBgPath = String.valueOf(DefaultVideoBg);
-        }
-        if (DefaultUserBg != null) {
-            defaultUserBgPath = String.valueOf(DefaultUserBg);
-        }
-        if (LogLevel != null) {
-            logLevel = Integer.parseInt(String.valueOf(LogLevel));
-        }
-        if (LayoutMode != null) {
-            layoutMode = Integer.parseInt(String.valueOf(LayoutMode));
-        }
-        if (MaxResolutionUid != null) {
-            maxResolutionUid = Long.parseLong(String.valueOf(MaxResolutionUid));
-        }
-        if (MaxResolutionUserAccount != null) {
-            maxResolutionUserAccount = String.valueOf(MaxResolutionUserAccount);
-        }
-
-        if (userAccount.length() != 0 && maxResolutionUserAccount.length() == 0 && maxResolutionUid != -1 && layoutMode == 2) {
-            log.info("maxResolutionUserAccount should be used when join channel with user account");
-            return;
-        }
-
-        if (userAccount.length() == 0 && maxResolutionUid == 0 && maxResolutionUserAccount.length() != 0 && layoutMode == 2) {
-            log.info("maxResolutionUid should be used when join channel with uid.");
-            return;
-        }
-
-        if (EnableCloudProxy != null && Integer.parseInt(String.valueOf(EnableCloudProxy)) == 1) {
-            enableCloudProxy = true;
-        }
-
-        if (AutoSubscribe != null && Integer.parseInt(String.valueOf(AutoSubscribe)) == 0) {
-            autoSubscribe = false;
-        }
-
-        if (!autoSubscribe) {
-            if (SubscribeVideoUids != null) {
-                subscribeVideoUids = String.valueOf(SubscribeVideoUids);
-                String[] struids = subscribeVideoUids.split(",");
-                for (String struid : struids) {
-                    if (userAccount.length() > 0) {
-                        subscribeVideoUserAccount.add(struid);
-                    } else {
-                        try {
-                            subscribedVideoUids.add(Long.parseLong(struid));
-                        } catch (Exception e) {
-                            //Ignore exception here.
-                        }
-                    }
-                }
-            }
-            if (SubscribeAudioUids != null) {
-                subscribeAudioUids = String.valueOf(SubscribeAudioUids);
-            }
-        }
 
         if (audioProfile > 2) {
             audioProfile = 2;
@@ -1001,9 +786,9 @@ public class RecordingSampleM implements RecordingEventHandler {
         }
         // run jni event loop , or start a new thread to do it
         if (userAccount.length() > 0) {
-            RecordingSDKInstance.createChannelWithUserAccount(appId, channelKey, name, userAccount, config, logLevel);
+            RecordingSDKInstance.createChannelWithUserAccount(appId, "", channelId, userAccount, config, logLevel);
         } else {
-            RecordingSDKInstance.createChannel(appId, channelKey, name, uid, config, logLevel);
+            RecordingSDKInstance.createChannel(appId, "", channelId, uid, config, logLevel);
         }
         cleanTimer.cancel();
         log.info("jni layer has been exited...");
@@ -1013,9 +798,11 @@ public class RecordingSampleM implements RecordingEventHandler {
     public boolean leaveChannel() {
         return RecordingSDKInstance.leaveChannel();
     }
+
     public int startService() {
         return RecordingSDKInstance.startService();
     }
+
     public int stopService() {
         return RecordingSDKInstance.stopService();
     }

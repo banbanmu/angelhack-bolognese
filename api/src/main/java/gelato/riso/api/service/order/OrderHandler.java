@@ -57,7 +57,7 @@ public class OrderHandler {
         @Value
         @Builder
         static class Request {
-            String storeId;
+            Integer storeId;
             String orderId;
         }
     }
@@ -66,7 +66,7 @@ public class OrderHandler {
         @Value
         @Builder
         static class Request {
-            String storeId;
+            Integer storeId;
             String orderId;
         }
     }
